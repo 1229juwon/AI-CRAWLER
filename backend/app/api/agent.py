@@ -1,10 +1,13 @@
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agent.planner import PlanValidationError, SearchPlanValidator
 from app.agent.schemas import PlanValidationRequest, SearchPlan
+from app.agent.llm import LLMPlannerError, OpenAICompatiblePlanner
+from app.core.config import get_settings
 from sqlalchemy import select
 from app.db.models import AgentExecution, CollectionJob, CollectionKeyword, CollectionTask
 from app.db.session import get_session
@@ -14,6 +17,10 @@ router = APIRouter(prefix="/agent", tags=["agent"])
 validator = SearchPlanValidator()
 
 
+class NaturalLanguagePlanRequest(BaseModel):
+    request_text: str = Field(min_length=1, max_length=5000)
+
+
 @router.post("/plans/validate")
 async def validate_plan(payload: PlanValidationRequest) -> dict:
     try:
@@ -21,6 +28,25 @@ async def validate_plan(payload: PlanValidationRequest) -> dict:
     except PlanValidationError as error:
         raise HTTPException(status_code=422, detail=str(error)) from error
     return {"valid": True, "platform": plan.platform.value, "queries": plan.queries, "tools": plan.tools}
+
+
+@router.post("/plans/from-request")
+async def create_plan_from_request(payload: NaturalLanguagePlanRequest) -> dict:
+    settings = get_settings()
+    planner = OpenAICompatiblePlanner(
+        endpoint=settings.ai_api_url,
+        model=settings.ai_model,
+        api_key=settings.ai_api_key.get_secret_value(),
+        jwt_token=settings.ai_jwt_token.get_secret_value(),
+        timeout=settings.ai_request_timeout_seconds,
+    )
+    try:
+        plan = await planner.create_plan(payload.request_text)
+    except (LLMPlannerError, ValueError) as error:
+        raise HTTPException(status_code=502, detail=str(error)) from error
+    finally:
+        await planner.aclose()
+    return {"valid": True, "plan": plan.model_dump(mode="json"), "tools": plan.tools}
 
 
 @router.post("/plans/execute", status_code=status.HTTP_202_ACCEPTED)

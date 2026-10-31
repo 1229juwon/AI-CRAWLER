@@ -19,6 +19,11 @@ class Settings(BaseSettings):
     redis_url: str = "redis://localhost:6379/0"
     youtube_api_key: SecretStr = Field(default=SecretStr(""))
     youtube_daily_quota: int = 10000
+    ai_api_url: str = "http://localhost:8088/api/chat/completions"
+    ai_api_key: SecretStr = Field(default=SecretStr(""))
+    ai_jwt_token: SecretStr = Field(default=SecretStr(""))
+    ai_model: str = "gemma-4-26B-A4B-it"
+    ai_request_timeout_seconds: float = 30.0
     minio_endpoint: str = "localhost:9000"
     minio_access_key: str = "crawler"
     minio_secret_key: SecretStr = Field(default=SecretStr("crawler-secret"))
