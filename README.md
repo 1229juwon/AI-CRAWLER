@@ -157,7 +157,8 @@ agent_executions ── collection_jobs
 - [x] Redis 기반 Celery worker 분리와 `youtube.collect` task 등록
 - [x] 수집 작업 생성·상태 조회 API
 - [x] 일시적 HTTP timeout에 대한 제한적 exponential retry
-- [ ] Agent Tool registry와 검색 계획 검증
+- [x] Agent Tool registry와 검색 계획 검증
+- [x] Agent 계획 실행 API와 `agent_executions` 이력 생성
 - [ ] 작업 중단·재개·우선순위·worker 재시작 통합
 - [ ] 완료 조건: Agent 실행 이력과 worker 상태가 API에서 추적되고 통합 테스트 통과
 
