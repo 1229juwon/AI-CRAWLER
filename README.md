@@ -141,10 +141,13 @@ agent_executions ── collection_jobs
 
 ### 3단계 — YouTube 발견·메타데이터 수집 (진행 중)
 
-- 검색 페이지네이션, 기간·정렬 조건, 상세·채널·댓글·자막 접근
-- API 할당량 원장과 대기 상태 전환
-- 중복 제거 및 재시도 정책
-- 완료 조건: API mock 기반 검색·페이지네이션·중복·쿼터·실패 테스트 통과
+- [x] 검색 페이지네이션, 기간·정렬 조건, 영상 상세·채널·댓글·자막 접근 골격
+- [x] API 할당량 원장과 대기 상태 전환 골격
+- [x] 중복 제거 및 명시적 API 오류 처리
+- [ ] 실제 작업 상태 전환·DB 저장·재시도 정책 통합
+- [ ] 완료 조건: API mock 기반 전체 수집 흐름과 통합 테스트 통과
+
+현재 구현은 [YouTubeCollector](backend/app/collectors/youtube/collector.py)와 공식 YouTube Data API v3 호출 클라이언트입니다. 실제 API 키 없이 mock transport로 페이지네이션, 중복 제거, quota 초과, 댓글 비활성화 동작을 검증합니다.
 
 ### 4단계 — Agent와 비동기 작업
 
