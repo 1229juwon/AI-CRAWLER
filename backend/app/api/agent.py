@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agent.planner import PlanValidationError, SearchPlanValidator
 from app.agent.schemas import PlanValidationRequest, SearchPlan
+from sqlalchemy import select
 from app.db.models import AgentExecution, CollectionJob, CollectionKeyword, CollectionTask
 from app.db.session import get_session
 from app.workers.youtube_tasks import collect_youtube
@@ -57,5 +58,53 @@ async def execute_plan(
     session.add_all([job, execution])
     await session.commit()
     await session.refresh(task)
-    collect_youtube.delay(str(task.id))
+    async_result = collect_youtube.apply_async(args=[str(task.id)], priority=job.priority)
+    task.celery_task_id = async_result.id
+    execution.result = {"status": "queued", "celery_task_id": async_result.id}
+    await session.commit()
     return {"job_id": str(job.id), "task_id": str(task.id), "agent_execution_id": str(execution.id)}
+
+
+@router.get("/executions")
+async def list_agent_executions(
+    session: AsyncSession = Depends(get_session),
+) -> list[dict]:
+    executions = (
+        await session.scalars(
+            select(AgentExecution).order_by(AgentExecution.created_at.desc()).limit(50)
+        )
+    ).all()
+    return [
+        {
+            "id": str(execution.id),
+            "job_id": str(execution.job_id) if execution.job_id else None,
+            "request_text": execution.request_text,
+            "plan": execution.plan,
+            "tools_called": execution.tools_called,
+            "result": execution.result,
+            "error": execution.error_message,
+            "created_at": execution.created_at.isoformat() if execution.created_at else None,
+        }
+        for execution in executions
+    ]
+
+
+@router.get("/executions/{execution_id}")
+async def get_agent_execution(
+    execution_id: UUID,
+    session: AsyncSession = Depends(get_session),
+) -> dict:
+    execution = await session.get(AgentExecution, execution_id)
+    if execution is None:
+        raise HTTPException(status_code=404, detail="agent execution not found")
+    return {
+        "id": str(execution.id),
+        "job_id": str(execution.job_id) if execution.job_id else None,
+        "request_text": execution.request_text,
+        "plan": execution.plan,
+        "tools_called": execution.tools_called,
+        "result": execution.result,
+        "error": execution.error_message,
+        "created_at": execution.created_at.isoformat() if execution.created_at else None,
+        "updated_at": execution.updated_at.isoformat() if execution.updated_at else None,
+    }

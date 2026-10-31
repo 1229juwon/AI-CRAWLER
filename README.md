@@ -159,7 +159,8 @@ agent_executions ── collection_jobs
 - [x] 일시적 HTTP timeout에 대한 제한적 exponential retry
 - [x] Agent Tool registry와 검색 계획 검증
 - [x] Agent 계획 실행 API와 `agent_executions` 이력 생성
-- [ ] 작업 중단·재개·우선순위·worker 재시작 통합
+- [x] 작업 중단·재개·우선순위·Agent 실행 이력 조회 API
+- [ ] worker 재시작 통합 테스트
 - [ ] 완료 조건: Agent 실행 이력과 worker 상태가 API에서 추적되고 통합 테스트 통과
 
 Docker 검증: worker가 Redis에 연결되고 `youtube.collect` task를 등록한 뒤 Celery inspect ping에 응답했습니다. YouTube API key가 없으면 worker는 명시적으로 실패하며, 권한 없는 우회 수집을 시도하지 않습니다.
