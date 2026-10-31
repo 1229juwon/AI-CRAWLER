@@ -7,7 +7,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.collectors.base import SearchRequest
-from app.collectors.youtube.client import YouTubeApiError
+from app.collectors.youtube.client import YouTubeApiError, YouTubeQuotaExceeded
 from app.collectors.youtube.collector import YouTubeCollector
 from app.db.models import (
     CollectionJob,
@@ -118,6 +118,19 @@ class YouTubeCollectionService:
             return CollectionResult(
                 len(discovered), metadata_count, comments_count, captions_count, task.status
             )
+        except YouTubeQuotaExceeded as error:
+            await self.session.rollback()
+            task = await self.session.get(CollectionTask, task_id)
+            if task is None:
+                raise
+            task.status = TaskStatus.waiting_quota
+            task.error_message = "YouTube API quota is exhausted; task paused without retrying."
+            job = await self.session.get(CollectionJob, task.job_id)
+            if job is not None:
+                job.status = JobStatus.paused
+            await self._log(task, "quota_wait", task.error_message)
+            await self.session.commit()
+            return CollectionResult(0, 0, 0, 0, task.status)
         except (YouTubeApiError, LookupError, SQLAlchemyError) as error:
             await self.session.rollback()
             task = await self.session.get(CollectionTask, task_id)
@@ -191,8 +204,8 @@ class YouTubeCollectionService:
                     VideoComment(
                         video_id=video_id,
                         platform_comment_id=comment_id,
-                        author_name=snippet.get("authorDisplayName"),
-                        text=snippet.get("textDisplay", ""),
+                        author_name=self._clean_text(snippet.get("authorDisplayName")),
+                        text=self._clean_text(snippet.get("textDisplay", "")),
                         published_at=self._parse_datetime(snippet.get("publishedAt")),
                     )
                 )
@@ -241,3 +254,7 @@ class YouTubeCollectionService:
     @staticmethod
     def _parse_datetime(value: str | None) -> datetime | None:
         return datetime.fromisoformat(value.replace("Z", "+00:00")) if value else None
+
+    @staticmethod
+    def _clean_text(value: str | None) -> str | None:
+        return value.replace("\x00", "") if value is not None else None
