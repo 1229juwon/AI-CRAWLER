@@ -144,10 +144,12 @@ agent_executions ── collection_jobs
 - [x] 검색 페이지네이션, 기간·정렬 조건, 영상 상세·채널·댓글·자막 접근 골격
 - [x] API 할당량 원장과 대기 상태 전환 골격
 - [x] 중복 제거 및 명시적 API 오류 처리
-- [ ] 실제 작업 상태 전환·DB 저장·재시도 정책 통합
+- [x] 실제 작업 상태 전환·DB 저장·할당량 부족 시 대기 전환
+- [ ] 재시도 정책과 Celery Worker 통합
 - [ ] 완료 조건: API mock 기반 전체 수집 흐름과 통합 테스트 통과
 
 현재 구현은 [YouTubeCollector](backend/app/collectors/youtube/collector.py)와 공식 YouTube Data API v3 호출 클라이언트입니다. 실제 API 키 없이 mock transport로 페이지네이션, 중복 제거, quota 초과, 댓글 비활성화 동작을 검증합니다.
+`YouTubeCollectionService`는 검색 결과를 PostgreSQL에 중복 없이 저장하고 메타데이터·댓글·자막 상태를 갱신합니다. PostgreSQL 통합 테스트에서 작업 완료와 quota 부족 시 `waiting_quota`/`paused` 전환을 검증합니다.
 
 ### 4단계 — Agent와 비동기 작업
 
