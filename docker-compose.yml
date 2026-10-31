@@ -1,4 +1,20 @@
 services:
+  worker:
+    build:
+      context: ./backend
+    command: celery -A app.workers.celery_app.celery_app worker --loglevel=INFO --pool=solo
+    environment:
+      DATABASE_URL: postgresql+asyncpg://crawler:crawler@postgres:5432/crawler
+      REDIS_URL: redis://redis:6379/0
+      YOUTUBE_API_KEY: ${YOUTUBE_API_KEY:-}
+      YOUTUBE_API_KEY_SUB: ${YOUTUBE_API_KEY_SUB:-}
+      YOUTUBE_DAILY_QUOTA: ${YOUTUBE_DAILY_QUOTA:-10000}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
   postgres:
     image: postgres:16-alpine
     environment:
@@ -28,8 +44,8 @@ services:
       retries: 10
 
   minio:
-    image: minio/minio:latest
-    command: server /data --console-address ":9001"
+    image: bitnamilegacy/minio:latest
+    command: server /bitnami/minio/data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: crawler
       MINIO_ROOT_PASSWORD: crawler-secret
@@ -37,7 +53,7 @@ services:
       - "9000:9000"
       - "9001:9001"
     volumes:
-      - minio_data:/data
+      - minio_data:/bitnami/minio/data
     healthcheck:
       test: ["CMD", "mc", "ready", "local"]
       interval: 5s
