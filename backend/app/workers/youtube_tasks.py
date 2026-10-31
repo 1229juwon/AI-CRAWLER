@@ -2,12 +2,13 @@ import asyncio
 from uuid import UUID
 
 import httpx
+from sqlalchemy import select
 
 from app.collectors.base import SearchRequest
 from app.collectors.youtube.client import YouTubeClient
 from app.collectors.youtube.collector import YouTubeCollector
 from app.core.config import get_settings
-from app.db.models import CollectionTask
+from app.db.models import AgentExecution, CollectionTask
 from app.db.session import SessionFactory
 from app.services.quota import QuotaLedger
 from app.services.youtube_collection import YouTubeCollectionService
@@ -38,6 +39,18 @@ async def _run_collection(task_id: UUID) -> dict:
                 YouTubeCollector(client),
                 QuotaLedger(settings.youtube_daily_quota),
             ).run(task_id, request)
+            execution = await session.scalar(
+                select(AgentExecution).where(AgentExecution.job_id == task.job_id)
+            )
+            if execution is not None:
+                execution.result = {
+                    "status": result.status.value,
+                    "discovered_count": result.discovered_count,
+                    "metadata_count": result.metadata_count,
+                    "comments_count": result.comments_count,
+                    "captions_count": result.captions_count,
+                }
+                await session.commit()
             return {
                 "status": result.status.value,
                 "discovered_count": result.discovered_count,

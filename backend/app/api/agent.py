@@ -21,44 +21,7 @@ class NaturalLanguagePlanRequest(BaseModel):
     request_text: str = Field(min_length=1, max_length=5000)
 
 
-@router.post("/plans/validate")
-async def validate_plan(payload: PlanValidationRequest) -> dict:
-    try:
-        plan = validator.validate(payload.plan)
-    except PlanValidationError as error:
-        raise HTTPException(status_code=422, detail=str(error)) from error
-    return {"valid": True, "platform": plan.platform.value, "queries": plan.queries, "tools": plan.tools}
-
-
-@router.post("/plans/from-request")
-async def create_plan_from_request(payload: NaturalLanguagePlanRequest) -> dict:
-    settings = get_settings()
-    planner = OpenAICompatiblePlanner(
-        endpoint=settings.ai_api_url,
-        model=settings.ai_model,
-        api_key=settings.ai_api_key.get_secret_value(),
-        jwt_token=settings.ai_jwt_token.get_secret_value(),
-        timeout=settings.ai_request_timeout_seconds,
-    )
-    try:
-        plan = await planner.create_plan(payload.request_text)
-    except (LLMPlannerError, ValueError) as error:
-        raise HTTPException(status_code=502, detail=str(error)) from error
-    finally:
-        await planner.aclose()
-    return {"valid": True, "plan": plan.model_dump(mode="json"), "tools": plan.tools}
-
-
-@router.post("/plans/execute", status_code=status.HTTP_202_ACCEPTED)
-async def execute_plan(
-    plan: SearchPlan,
-    session: AsyncSession = Depends(get_session),
-) -> dict[str, str]:
-    try:
-        validator.validate(plan)
-    except PlanValidationError as error:
-        raise HTTPException(status_code=422, detail=str(error)) from error
-
+async def _enqueue_plan(plan: SearchPlan, session: AsyncSession) -> dict[str, str]:
     job = CollectionJob(request_text=plan.request_text)
     task = CollectionTask(
         job=job,
@@ -88,7 +51,74 @@ async def execute_plan(
     task.celery_task_id = async_result.id
     execution.result = {"status": "queued", "celery_task_id": async_result.id}
     await session.commit()
-    return {"job_id": str(job.id), "task_id": str(task.id), "agent_execution_id": str(execution.id)}
+    return {
+        "job_id": str(job.id),
+        "task_id": str(task.id),
+        "agent_execution_id": str(execution.id),
+    }
+
+
+@router.post("/plans/validate")
+async def validate_plan(payload: PlanValidationRequest) -> dict:
+    try:
+        plan = validator.validate(payload.plan)
+    except PlanValidationError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+    return {"valid": True, "platform": plan.platform.value, "queries": plan.queries, "tools": plan.tools}
+
+
+@router.post("/plans/from-request")
+async def create_plan_from_request(payload: NaturalLanguagePlanRequest) -> dict:
+    settings = get_settings()
+    planner = OpenAICompatiblePlanner(
+        endpoint=settings.ai_api_url,
+        model=settings.ai_model,
+        api_key=settings.ai_api_key.get_secret_value(),
+        jwt_token=settings.ai_jwt_token.get_secret_value(),
+        timeout=settings.ai_request_timeout_seconds,
+    )
+    try:
+        plan = await planner.create_plan(payload.request_text)
+    except (LLMPlannerError, ValueError) as error:
+        raise HTTPException(status_code=502, detail=str(error)) from error
+    finally:
+        await planner.aclose()
+    return {"valid": True, "plan": plan.model_dump(mode="json"), "tools": plan.tools}
+
+
+@router.post("/requests/execute", status_code=status.HTTP_202_ACCEPTED)
+async def execute_natural_language_request(
+    payload: NaturalLanguagePlanRequest,
+    session: AsyncSession = Depends(get_session),
+) -> dict[str, str]:
+    settings = get_settings()
+    planner = OpenAICompatiblePlanner(
+        endpoint=settings.ai_api_url,
+        model=settings.ai_model,
+        api_key=settings.ai_api_key.get_secret_value(),
+        jwt_token=settings.ai_jwt_token.get_secret_value(),
+        timeout=settings.ai_request_timeout_seconds,
+    )
+    try:
+        plan = await planner.create_plan(payload.request_text)
+        return await _enqueue_plan(plan, session)
+    except (LLMPlannerError, ValueError) as error:
+        raise HTTPException(status_code=502, detail=str(error)) from error
+    finally:
+        await planner.aclose()
+
+
+@router.post("/plans/execute", status_code=status.HTTP_202_ACCEPTED)
+async def execute_plan(
+    plan: SearchPlan,
+    session: AsyncSession = Depends(get_session),
+) -> dict[str, str]:
+    try:
+        validator.validate(plan)
+    except PlanValidationError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+
+    return await _enqueue_plan(plan, session)
 
 
 @router.get("/executions")

@@ -160,6 +160,8 @@ agent_executions ── collection_jobs
 - [x] Agent Tool registry와 검색 계획 검증
 - [x] Agent 계획 실행 API와 `agent_executions` 이력 생성
 - [x] OpenAI 호환 LLM Planner와 환경변수 기반 인증 설정
+- [x] 자연어 요청부터 계획 생성·작업 등록까지의 end-to-end API
+- [x] Worker 수집 결과를 Agent 실행 이력에 반영
 - [x] 작업 중단·재개·우선순위·Agent 실행 이력 조회 API
 - [ ] worker 재시작 통합 테스트
 - [ ] 완료 조건: Agent 실행 이력과 worker 상태가 API에서 추적되고 통합 테스트 통과
