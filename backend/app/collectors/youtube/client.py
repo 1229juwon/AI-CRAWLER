@@ -64,7 +64,7 @@ class YouTubeClient:
 
     async def paginate_search(self, request: Any) -> AsyncIterator[dict[str, Any]]:
         page_token = None
-        while True:
+        for _ in range(request.max_pages):
             page = await self.search_page(request, page_token=page_token)
             yield page
             page_token = page.get("nextPageToken")

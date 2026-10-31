@@ -10,6 +10,7 @@ class SearchRequest:
     published_before: datetime | None = None
     order: str = "relevance"
     page_size: int = 50
+    max_pages: int = 5
 
 
 @dataclass(frozen=True)

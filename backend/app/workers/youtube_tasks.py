@@ -18,9 +18,12 @@ from .celery_app import celery_app
 
 async def _run_collection(task_id: UUID) -> dict:
     settings = get_settings()
-    api_key = settings.youtube_api_key.get_secret_value()
+    api_key = (
+        settings.youtube_api_key_sub.get_secret_value()
+        or settings.youtube_api_key.get_secret_value()
+    )
     if not api_key:
-        raise RuntimeError("YOUTUBE_API_KEY is required to execute a YouTube collection task")
+        raise RuntimeError("YOUTUBE_API_KEY_SUB or YOUTUBE_API_KEY is required to execute a YouTube collection task")
 
     async with httpx.AsyncClient(timeout=30.0) as http_client:
         client = YouTubeClient(api_key, http_client)
@@ -33,6 +36,7 @@ async def _run_collection(task_id: UUID) -> dict:
                 query=parameters["query"],
                 order=parameters.get("order", "relevance"),
                 page_size=parameters.get("page_size", 50),
+                max_pages=parameters.get("max_pages", 5),
             )
             result = await YouTubeCollectionService(
                 session,

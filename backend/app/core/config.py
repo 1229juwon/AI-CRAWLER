@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+asyncpg://crawler:crawler@localhost:5432/crawler"
     redis_url: str = "redis://localhost:6379/0"
     youtube_api_key: SecretStr = Field(default=SecretStr(""))
+    youtube_api_key_sub: SecretStr = Field(default=SecretStr(""))
     youtube_daily_quota: int = 10000
     ai_api_url: str = "http://localhost:8088/api/chat/completions"
     ai_api_key: SecretStr = Field(default=SecretStr(""))
