@@ -6,6 +6,8 @@ AI 기반 대규모 멀티 플랫폼 콘텐츠 수집 시스템의 YouTube POC�
 
 현재 저장소는 **4단계: Agent와 비동기 작업 구현 중**입니다. 2단계 실행 기반과 데이터 모델, 3단계 YouTube 수집·저장은 Docker와 PostgreSQL 환경에서 검증을 완료했습니다.
 
+다른 PC에서 개발을 이어갈 때는 [`prompts/README.md`](prompts/README.md)의 개발 이어받기 프롬프트를 사용합니다.
+
 ## 목표와 범위
 
 - 자연어 요청을 검색 계획으로 변환하고 등록된 Tool만 호출합니다.
