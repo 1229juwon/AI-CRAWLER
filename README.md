@@ -4,7 +4,7 @@ AI 기반 대규모 멀티 플랫폼 콘텐츠 수집 시스템의 YouTube POC�
 
 ## 현재 진행 단계
 
-현재 저장소는 **3단계: YouTube 발견·메타데이터 수집 구현 중**입니다. 2단계 실행 기반과 데이터 모델은 Docker 환경에서 검증을 완료했습니다.
+현재 저장소는 **4단계: Agent와 비동기 작업 구현 중**입니다. 2단계 실행 기반과 데이터 모델, 3단계 YouTube 수집·저장은 Docker와 PostgreSQL 환경에서 검증을 완료했습니다.
 
 ## 목표와 범위
 
@@ -145,7 +145,8 @@ agent_executions ── collection_jobs
 - [x] API 할당량 원장과 대기 상태 전환 골격
 - [x] 중복 제거 및 명시적 API 오류 처리
 - [x] 실제 작업 상태 전환·DB 저장·할당량 부족 시 대기 전환
-- [ ] 재시도 정책과 Celery Worker 통합
+- [x] Redis 기반 Celery Worker 등록과 작업 생성·상태 조회 API
+- [ ] 실제 YouTube task 실행과 worker 재시작 통합 테스트
 - [ ] 완료 조건: API mock 기반 전체 수집 흐름과 통합 테스트 통과
 
 현재 구현은 [YouTubeCollector](backend/app/collectors/youtube/collector.py)와 공식 YouTube Data API v3 호출 클라이언트입니다. 실제 API 키 없이 mock transport로 페이지네이션, 중복 제거, quota 초과, 댓글 비활성화 동작을 검증합니다.
@@ -153,9 +154,14 @@ agent_executions ── collection_jobs
 
 ### 4단계 — Agent와 비동기 작업
 
-- Tool registry, 검색 계획 검증, Celery worker 분리
-- 작업 중단·재개·우선순위·실패 재처리
-- 완료 조건: Agent 실행 이력과 worker 상태가 API에서 추적되고 통합 테스트 통과
+- [x] Redis 기반 Celery worker 분리와 `youtube.collect` task 등록
+- [x] 수집 작업 생성·상태 조회 API
+- [x] 일시적 HTTP timeout에 대한 제한적 exponential retry
+- [ ] Agent Tool registry와 검색 계획 검증
+- [ ] 작업 중단·재개·우선순위·worker 재시작 통합
+- [ ] 완료 조건: Agent 실행 이력과 worker 상태가 API에서 추적되고 통합 테스트 통과
+
+Docker 검증: worker가 Redis에 연결되고 `youtube.collect` task를 등록한 뒤 Celery inspect ping에 응답했습니다. YouTube API key가 없으면 worker는 명시적으로 실패하며, 권한 없는 우회 수집을 시도하지 않습니다.
 
 ### 5단계 — 권한 있는 미디어 수신 및 저장
 

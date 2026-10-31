@@ -69,6 +69,7 @@ class CollectionTask(TimestampMixin, Base):
     platform: Mapped[str] = mapped_column(String(50))
     status: Mapped[TaskStatus] = mapped_column(Enum(TaskStatus, name="task_status"), default=TaskStatus.pending)
     error_message: Mapped[str | None] = mapped_column(Text)
+    parameters: Mapped[dict] = mapped_column(JSONB, default=dict)
 
     job: Mapped[CollectionJob] = relationship(back_populates="tasks")
     keywords: Mapped[list["CollectionKeyword"]] = relationship(back_populates="task", cascade="all, delete-orphan")

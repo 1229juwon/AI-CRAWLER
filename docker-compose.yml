@@ -1,4 +1,19 @@
 services:
+  worker:
+    build:
+      context: ./backend
+    command: celery -A app.workers.celery_app.celery_app worker --loglevel=INFO --pool=solo
+    environment:
+      DATABASE_URL: postgresql+asyncpg://crawler:crawler@postgres:5432/crawler
+      REDIS_URL: redis://redis:6379/0
+      YOUTUBE_API_KEY: ${YOUTUBE_API_KEY:-}
+      YOUTUBE_DAILY_QUOTA: ${YOUTUBE_DAILY_QUOTA:-10000}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
   postgres:
     image: postgres:16-alpine
     environment:

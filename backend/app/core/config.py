@@ -17,6 +17,8 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     database_url: str = "postgresql+asyncpg://crawler:crawler@localhost:5432/crawler"
     redis_url: str = "redis://localhost:6379/0"
+    youtube_api_key: SecretStr = Field(default=SecretStr(""))
+    youtube_daily_quota: int = 10000
     minio_endpoint: str = "localhost:9000"
     minio_access_key: str = "crawler"
     minio_secret_key: SecretStr = Field(default=SecretStr("crawler-secret"))

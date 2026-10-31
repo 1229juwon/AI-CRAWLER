@@ -5,6 +5,7 @@ from fastapi import FastAPI
 
 from app.core.config import get_settings
 from app.core.logging import configure_logging
+from app.api.collections import router as collections_router
 
 
 @asynccontextmanager
@@ -15,6 +16,7 @@ async def lifespan(_: FastAPI):
 
 
 app = FastAPI(title=get_settings().app_name, version="0.1.0", lifespan=lifespan)
+app.include_router(collections_router)
 
 
 @app.get("/health", tags=["system"])
