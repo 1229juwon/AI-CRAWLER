@@ -4,7 +4,7 @@ AI 기반 대규모 멀티 플랫폼 콘텐츠 수집 시스템의 YouTube POC�
 
 ## 현재 진행 단계
 
-현재 저장소는 **2단계: 실행 기반과 데이터 모델 구현 중**입니다. 이 단계에서는 구현되지 않은 기능을 완료로 표시하지 않으며, 각 후속 단계는 테스트를 통과한 뒤 진행합니다.
+현재 저장소는 **3단계: YouTube 발견·메타데이터 수집 구현 중**입니다. 2단계 실행 기반과 데이터 모델은 Docker 환경에서 검증을 완료했습니다.
 
 ## 목표와 범위
 
@@ -130,16 +130,16 @@ agent_executions ── collection_jobs
 - [x] 최소 데이터 모델 관계와 상태 분리 정의
 - [x] 단계별 검증 기준 정의
 
-### 2단계 — 실행 기반과 데이터 모델 (진행 중)
+### 2단계 — 실행 기반과 데이터 모델
 
 - [x] FastAPI health endpoint, 설정 검증, 구조화 로그
 - [x] SQLAlchemy 모델과 Alembic 초기 마이그레이션
 - [x] PostgreSQL/Redis/MinIO 로컬 Compose 구성
-- [ ] 완료 조건: 마이그레이션 적용, health check, DB 연결 테스트 통과
+- [x] 완료 조건: 마이그레이션 적용, health check, DB 연결 테스트 통과
 
-현재 환경에서는 Docker Desktop Linux Engine이 실행되지 않아 PostgreSQL 컨테이너와 마이그레이션 적용을 아직 검증하지 못했습니다.
+검증 완료: PostgreSQL·Redis·MinIO Docker 서비스 healthy, Alembic `0001_initial_schema` 적용, 실행 중인 FastAPI `/health` 응답 확인.
 
-### 3단계 — YouTube 발견·메타데이터 수집
+### 3단계 — YouTube 발견·메타데이터 수집 (진행 중)
 
 - 검색 페이지네이션, 기간·정렬 조건, 상세·채널·댓글·자막 접근
 - API 할당량 원장과 대기 상태 전환
