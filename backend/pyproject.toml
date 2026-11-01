@@ -18,7 +18,8 @@ dependencies = [
   "celery>=5.4,<6.0",
   "minio>=7.2,<8.0",
   "uvicorn[standard]>=0.32,<1.0",
-]
+    "yt-dlp>=2024,<2030",
+  ]
 
 [project.optional-dependencies]
 test = [

@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     app_name: str = "AI Crawler API"
     environment: str = "development"
     log_level: str = "INFO"
-    database_url: str = "postgresql+asyncpg://crawler:crawler@localhost:5432/crawler"
+    database_url: str = "******localhost:5432/crawler"
     redis_url: str = "redis://localhost:6379/0"
     youtube_api_key: SecretStr = Field(default=SecretStr(""))
     youtube_api_key_sub: SecretStr = Field(default=SecretStr(""))

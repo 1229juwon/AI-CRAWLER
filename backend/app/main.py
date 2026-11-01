@@ -7,6 +7,8 @@ from app.core.config import get_settings
 from app.core.logging import configure_logging
 from app.api.collections import router as collections_router
 from app.api.agent import router as agent_router
+from app.api.media import router as media_router
+from app.api.youtube import router as youtube_router
 
 
 @asynccontextmanager
@@ -19,6 +21,8 @@ async def lifespan(_: FastAPI):
 app = FastAPI(title=get_settings().app_name, version="0.1.0", lifespan=lifespan)
 app.include_router(collections_router)
 app.include_router(agent_router)
+app.include_router(media_router)
+app.include_router(youtube_router)
 
 
 @app.get("/health", tags=["system"])
