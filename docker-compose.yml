@@ -1,10 +1,39 @@
 services:
+  api:
+    build:
+      context: ./backend
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    environment:
+      DATABASE_URL: postgres://postgres:5432/crawler
+      REDIS_URL: redis://redis:6379/0
+      YOUTUBE_API_KEY: ${YOUTUBE_API_KEY:-}
+      YOUTUBE_API_KEY_SUB: ${YOUTUBE_API_KEY_SUB:-}
+      YOUTUBE_DAILY_QUOTA: ${YOUTUBE_DAILY_QUOTA:-10000}
+      AI_API_URL: ${AI_API_URL:-http://localhost:8088/api/chat/completions}
+      AI_API_KEY: ${AI_API_KEY:-}
+      AI_JWT_TOKEN: ${AI_JWT_TOKEN:-}
+      AI_MODEL: ${AI_MODEL:-gemma-4-26B-A4B-it}
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-crawler}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-crawler-secret}
+      MINIO_BUCKET: ${MINIO_BUCKET:-media}
+      MINIO_SECURE: "false"
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+
   worker:
     build:
       context: ./backend
     command: celery -A app.workers.celery_app.celery_app worker --loglevel=INFO --pool=solo
     environment:
-      DATABASE_URL: postgresql+asyncpg://crawler:crawler@postgres:5432/crawler
+      DATABASE_URL: postgres://postgres:5432/crawler
       REDIS_URL: redis://redis:6379/0
       YOUTUBE_API_KEY: ${YOUTUBE_API_KEY:-}
       YOUTUBE_API_KEY_SUB: ${YOUTUBE_API_KEY_SUB:-}
